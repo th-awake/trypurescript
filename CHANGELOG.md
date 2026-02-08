@@ -12,12 +12,14 @@ Bugfixes:
 
 Other improvements:
 - Bump PureScript to `0.15.15` (v0.15.16-8 prerelease)
-- Update to latest package set (`psc-0.15.15-20260207`)
+- Update to registry package set `73.0.0`
+- Migrate from spago-legacy (0.21.1) to spago 1.0.3 with registry package sets
 - Upgrade to GHC 9.8.4 / Stackage LTS 23.18
-- Add idiomatic Nix flake with build support
+- Add idiomatic Nix flake with build support (purescript-overlay for tooling)
 - Modernize trypurescript.cabal (cabal-version 2.4, proper version bounds)
 - Fix all GHC warnings in server code
-- Update CI to modern GitHub Actions versions
+- Migrate client from spago-legacy to spago 1.0.3
+- Migrate CI to Nix-based builds (DeterminateSystems nix-installer-action)
 - Update cabal.project with proper source-repository-packages and constraints
 
 ## [v2023-12-22.1](https://github.com/purescript/trypurescript/releases/tag/v2023-12-22.1)

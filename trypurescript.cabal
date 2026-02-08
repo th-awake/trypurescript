@@ -5,7 +5,7 @@ version:        1.0.0
 synopsis:       Interactive PureScript in the Browser
 description:    A simple web app for trying out the PureScript compiler
 category:       Web
-homepage:       https://github.com/nicklasxyz/trypurescript
+homepage:       https://github.com/purescript/trypurescript
 author:         Phil Freeman
 maintainer:     paf31@cantab.net
 copyright:      (c) 2013-20 PureScript

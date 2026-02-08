@@ -2,19 +2,17 @@
 
 ## Instructions for Redeploying Try PureScript
 
-After making a new compiler release, do the following to redeploy Try PureScript using the new compiler.
+After making a new compiler release, do the following to redeploy Try PureScript.
 
 1. Submit a PR with the following changes:
-    - In `stack.yaml`,
-      - update the `resolver` to match the same one used in the PureScript repo
-      - update `purescript` to use its new version.
+    - In `flake.nix`, update the `purescript-src` to point to the new compiler commit or tag.
+    - In `stack.yaml`, update the `resolver` and `purescript` source to match.
     - Update the package set (see next section's instructions).
-    - Update the shared config by running `cd client && npm run updateConfigVersions`.
+    - Update the shared config by running `cd client && npm run updateConfigVersions` (requires `purs` on your PATH).
     - Update the changelog to include the next release's date.
 2. Once the PR is merged, create a new GitHub tagged release using `vYYYY-MM-DD.X` (where `X` is usually `1` or the release attempt) as the version schema. The release will trigger a GitHub Actions build.
 3. Wait for the GitHub Actions build to finish (it builds the assets)
 4. Run `./deploy/run.sh vX-X-X.1`, replacing `vX-X-X.1` with the version you created.
-    - Note: if you're updating the compiler, be sure to push the corresponding tag to [`purescript-metadata`](https://github.com/purescript/purescript-metadata). Otherwise, `spago install` will fail on the server and prevent the server from starting.
 
 ## Updating the Package Set
 
@@ -22,58 +20,57 @@ The try.purescript.org server only has a limited amount of memory. If the packag
 
 Before deploying an updated package set, someone (your reviewer) should check that the memory required to hold the package set's externs files does not exceed that of the try.purescript.org server.
 
-Update the package set by doing the following. Each step is explained below:
+Update the package set by doing the following:
 
 ### Summary
 
 ```sh
-pushd staging
-spago upgrade-set
-cat > spago.dhall << EOF
-{ name = "try-purescript-server"
-, dependencies = [] : List Text
-, packages = ./packages.dhall
-, sources = [ "src/**/*.purs" ]
-}
-EOF
-spago ls packages | cut -f 1 -d ' ' | xargs spago install
-popd
-pushd client
+cd staging
+
+# Upgrade to the latest registry package set
+spago upgrade
+
+# Reinstall all packages from the set as dependencies
+spago ls packages | sed -n 's/| \([^ ]*\) .*/\1/p' | grep -v Package | xargs spago install
+
+# Rebuild
+spago build
+
+cd ../client
 npm run updateConfigVersions
-popd
-# add any new shims
-# update ES Module Shims (if needed)
 ```
 
 ### Step-by-Step Explanation
 
-1. Update the `upstream` package set in `staging/packages.dhall`:
+1. Upgrade the package set version in `staging/spago.yaml`:
 
         ```
-        $ pushd staging && spago upgrade-set && popd
+        $ cd staging && spago upgrade
         ```
 
-2. Set the `dependencies` key in the `spago.dhall` file to be an empty list. This will require a type annotation of `List Text`:
-
-        ```dhall
-        { name = "try-purescript-server"
-        , dependencies = [] : List Text
-        , packages = ./packages.dhall
-        , sources = [ "src/**/*.purs" ]
-        }
-        ```
-
-3. For `staging/spago.dhall`, install all packages in the package set by running this command:
+2. Install all packages from the package set as dependencies. The server needs every package listed as a dependency so that `spago sources` includes them all:
 
         ```
-        $ spago ls packages | cut -f 1 -d ' ' | xargs spago install
+        $ spago ls packages | sed -n 's/| \([^ ]*\) .*/\1/p' | grep -v Package | xargs spago install
         ```
 
-4. Update the `client/src/Try/SharedConfig.purs` file by running this command in `client`:
+3. Build the staging packages to verify everything compiles:
 
-        ```console
-        $ npm run updateConfigVersions
         ```
+        $ spago build
+        ```
+
+4. Update the `client/src/Try/SharedConfig.purs` file (requires `purs` on your PATH):
+
+        ```
+        $ cd ../client && npm run updateConfigVersions
+        ```
+
+    This script:
+    - Extracts the package set version from `staging/spago.yaml`
+    - Fetches the expected compiler version from the registry package set
+    - Verifies the local `purs` binary matches
+    - Updates `SharedConfig.purs` with both versions
 
 5. If any packages need NPM dependencies, you can try adding their shims to the import map in `client/public/frame.html`
     - Open up the `generator.jspm.io` URL in the comment

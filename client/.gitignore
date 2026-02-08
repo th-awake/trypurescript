@@ -7,4 +7,6 @@
 /.psa*
 /.stack*
 /public/js/index.js
+/client.js
+/src/Try/Config.purs
 .spago/

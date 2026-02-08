@@ -19,29 +19,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: haskell-actions/setup@v2
-        with:
-          enable-stack: true
-          stack-version: "latest"
-          stack-no-global: true
+      - uses: DeterminateSystems/nix-installer-action@v14
 
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.stack
-          key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('trypurescript.cabal') }}
+      - uses: DeterminateSystems/magic-nix-cache-action@v8
 
       - name: Build server code
-        run: stack --no-terminal -j1 build
+        run: nix build
 
       - name: Build server assets
         if: github.event_name == 'release'
         run: |
           mkdir ${{ env.SERVER_ASSET }}
-          cp $(stack path --dist-dir)/build/trypurescript/trypurescript ${{ env.SERVER_ASSET }}/
+          cp ./result/bin/trypurescript ${{ env.SERVER_ASSET }}/
           cp LICENSE ${{ env.SERVER_ASSET }}/
           cp -r deploy/ ${{ env.SERVER_ASSET }}/
-          cp -r staging/ ${{ env.SERVER_ASSET}}/
+          cp -r staging/ ${{ env.SERVER_ASSET }}/
           tar czf ${{ env.SERVER_ASSET }}.tar.gz -C ${{ env.SERVER_ASSET }}/ .
 
       - name: Persist server assets
@@ -57,28 +49,35 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - uses: DeterminateSystems/nix-installer-action@v14
+
+      - uses: DeterminateSystems/magic-nix-cache-action@v8
 
       - name: Build client code
         run: |
-          cd client
-          npm install
-          npm run build
-          npm run test
-          npm run build:production
-          npm run bundle
+          nix develop --command bash -c "
+            cd client
+            npm install
+            npm run build
+            npm run test
+            npm run build:production
+            npm run bundle
+          "
 
       - name: Check SharedConfig.purs versions
         run: |
-          cd client
-          cp src/Try/SharedConfig.purs sharedConfig.out
-          node updateSharedConfigVersions.mjs sharedConfig.out
-          diff src/Try/SharedConfig.purs sharedConfig.out || {
-            echo 'PureScript and/or package set versions in "client/src/Try/SharedConfig.purs"'
-            echo 'do not match the versions extracted from "stack.yaml" and "staging/packages.dhall".'
-            echo 'Please run "cd client && npm run updateConfigVersions". CI will fail until then.'
-            exit 1
-          }
+          nix develop --command bash -c "
+            cd client
+            cp src/Try/SharedConfig.purs sharedConfig.out
+            node updateSharedConfigVersions.mjs sharedConfig.out
+            diff src/Try/SharedConfig.purs sharedConfig.out || {
+              echo 'PureScript and/or package set versions in \"client/src/Try/SharedConfig.purs\"'
+              echo 'do not match the versions extracted from \"staging/spago.yaml\" and the registry package set.'
+              echo 'Please run \"cd client && npm run updateConfigVersions\". CI will fail until then.'
+              exit 1
+            }
+          "
 
       - name: Build client assets
         if: github.event_name == 'release'

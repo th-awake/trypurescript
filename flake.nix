@@ -3,15 +3,19 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    purescript-overlay = {
+      url = "github:thomashoneyman/purescript-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs }:
+  outputs = { self, nixpkgs, purescript-overlay }:
     let
       supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
 
       forAllSystems = f:
         nixpkgs.lib.genAttrs supportedSystems
-          (system: f (import nixpkgs { inherit system; overlays = [ overlay ]; }));
+          (system: f (import nixpkgs { inherit system; overlays = [ purescript-overlay.overlays.default overlay ]; }));
 
       purescript-src = {
         owner = "purescript";
@@ -54,7 +58,7 @@
             final.cabal-install
             final.stack
             final.pkg-config
-            final.purescript
+            final.purs
             final.spago
             final.esbuild
             final.nodejs

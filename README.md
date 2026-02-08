@@ -47,7 +47,7 @@ Most of these features can be controlled not only from the toolbar, but also usi
 
 ### Which Libraries Are Available?
 
-Try PureScript aims to provide a complete, recent package set from <https://github.com/purescript/package-sets>. The available libraries are those listed in [`staging/spago.dhall`](./staging/spago.dhall), at the versions in the package set mentioned in [`staging/packages.dhall`](./staging/packages.dhall).
+Try PureScript aims to provide a complete, recent package set from the [PureScript registry](https://github.com/purescript/registry). The available libraries are those listed in [`staging/spago.yaml`](./staging/spago.yaml), at the versions in the registry package set referenced there.
 
 ## Development
 
@@ -65,6 +65,8 @@ cd trypurescript
 
 This step sets up a local server for Try PureScript. You can skip this step if you just want to use the client with the production server.
 
+If you have Nix installed, you can run `nix develop` from the repository root to get a dev shell with `purs`, `spago`, `stack`, `esbuild`, and `nodejs` at the correct versions. If you use Lix or get evaluation errors, try `nix develop --impure`.
+
 ```sh
 # Build the trypurescript executable
 stack build
@@ -76,7 +78,7 @@ spago build
 # Ensure the compiled JavaScript is available to the client via symbolic link.
 ln -s "$PWD/output" "$PWD/../client/public/js/output"
 
-# Then, start the server.
+# Then, start the server from the staging directory.
 #
 # Below, we disable glob expansion via `set -o noglob` to ensure that globs are
 # passed to `purs` unchanged.
@@ -84,9 +86,6 @@ ln -s "$PWD/output" "$PWD/../client/public/js/output"
 # We run this in a subshell so that setting noglob only lasts for the duration
 # of the command and no longer.
 (set -o noglob && stack exec trypurescript 8081 $(spago sources))
-
-# Should output that it is compiling the sources (first time)
-# Then: Setting phasers to stun... (port 8081) (ctrl-c to quit)
 ```
 
 ### 3. Client setup
@@ -183,4 +182,4 @@ The server application takes the following arguments on the command line:
 
 #### Example
 
-    trypurescript 8081 'bower_components/purescript-*/src/**/*.purs'
+    trypurescript 8081 $(spago sources)
