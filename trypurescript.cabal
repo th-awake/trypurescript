@@ -1,41 +1,93 @@
-name: trypurescript
-version: 1.0.0
-cabal-version: >=1.8
-build-type: Simple
-license: BSD3
-license-file: LICENSE
-copyright: (c) Phil Freeman 2013
-maintainer: paf31@cantab.net
-synopsis: Interactive PureScript in the Browser
-description: A simple web app for trying out the PureScript compiler
-category: Web
-author: Phil Freeman
-data-dir: ""
+cabal-version: 2.4
+
+name:           trypurescript
+version:        1.0.0
+synopsis:       Interactive PureScript in the Browser
+description:    A simple web app for trying out the PureScript compiler
+category:       Web
+homepage:       https://github.com/nicklasxyz/trypurescript
+author:         Phil Freeman
+maintainer:     paf31@cantab.net
+copyright:      (c) 2013-20 PureScript
+license:        BSD-3-Clause
+license-file:   LICENSE
+build-type:     Simple
+
+common defaults
+  ghc-options:
+    -Weverything
+    -Wno-missing-exported-signatures
+    -Wno-missing-import-lists
+    -Wno-missed-specialisations
+    -Wno-all-missed-specialisations
+    -Wno-unsafe
+    -Wno-safe
+    -Wno-trustworthy-safe
+    -Wno-inferred-safe-imports
+    -Wno-missing-safe-haskell-mode
+    -Wno-missing-local-signatures
+    -Wno-monomorphism-restriction
+    -Wno-missing-deriving-strategies
+    -Wno-missing-export-lists
+    -Wno-missing-kind-signatures
+    -Wno-partial-fields
+    -Wno-missing-role-annotations
+    -Wno-implicit-prelude
+  default-language: Haskell2010
+  default-extensions:
+    BangPatterns
+    ConstraintKinds
+    DataKinds
+    DefaultSignatures
+    DeriveFunctor
+    DeriveFoldable
+    DeriveTraversable
+    DeriveGeneric
+    DerivingStrategies
+    DerivingVia
+    EmptyDataDecls
+    FlexibleContexts
+    FlexibleInstances
+    GeneralizedNewtypeDeriving
+    ImportQualifiedPost
+    KindSignatures
+    LambdaCase
+    MultiParamTypeClasses
+    NamedFieldPuns
+    PatternGuards
+    PatternSynonyms
+    RankNTypes
+    RecordWildCards
+    OverloadedRecordDot
+    OverloadedStrings
+    ScopedTypeVariables
+    TupleSections
+    TypeFamilies
+    ViewPatterns
 
 executable trypurescript
-    -- Since no one depends on this project as a library,
-    -- packages below are `-any` because their versions are determined
-    -- by the `stack.yml` file. Versions correspond to the ones
-    -- specified in the resolver (i.e. the package set)
-    -- unless it is a versioned library added via `extra-deps` field.
-    build-depends: base -any,
-                   aeson -any,
-                   bytestring -any,
-                   data-default -any,
-                   directory -any,
-                   filepath -any,
-                   Glob -any,
-                   scotty -any,
-                   purescript,
-                   containers -any,
-                   http-types -any,
-                   transformers -any,
-                   mtl -any,
-                   text -any,
-                   time -any,
-                   warp -any
-    hs-source-dirs: server
-    main-is: Main.hs
-    buildable: True
-    other-modules: Main
-    ghc-options: -Werror -O2 -threaded -rtsopts
+  import: defaults
+  hs-source-dirs: server
+  main-is: Main.hs
+  ghc-options: -fno-warn-unused-do-bind -threaded -rtsopts -with-rtsopts=-N -Wno-unused-packages
+  build-depends:
+    aeson >=2.2.3.0 && <2.3,
+    base >=4.19.2.0 && <4.20,
+    bytestring >=0.12.1.0 && <0.13,
+    containers >=0.6.8 && <0.7,
+    data-default >=0.7.1.3 && <0.9,
+    Glob >=0.10.2 && <0.11,
+    mtl >=2.3.1 && <2.4,
+    purescript,
+    scotty >=0.22 && <0.23,
+    text >=2.1.1 && <2.2,
+    time >=1.12.2 && <1.13,
+    transformers >=0.6.1.0 && <0.7,
+    warp >=3.4.6 && <3.5
+  if flag(static)
+    ld-options: -static -pthread
+
+flag static
+  description: Builds a statically-linked version of the Try PureScript server.
+  manual: True
+  default: False

@@ -5,6 +5,7 @@
 output/
 .psc-package/
 dist/
+dist-newstyle/
 .cabal-sandbox/
 
 cabal.sandbox.config
@@ -16,3 +17,7 @@ cabal.sandbox.config
 bundle/
 client/public/js/output
 client/client.js
+
+# Nix
+result
+.direnv/

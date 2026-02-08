@@ -19,6 +19,9 @@ const stagingPackagesDhallPath = path.join("..", "staging", "packages.dhall");
 const stackYamlContent = fs.readFileSync(stackYamlPath, "utf-8");
 const packagesContent = fs.readFileSync(stagingPackagesDhallPath, "utf-8");
 
+// Support both `- purescript-X.Y.Z` (Hackage) and GitHub commit format.
+// For GitHub commits, read the version from the purescript.cabal at that commit.
+// As a fallback, extract it from the staging/packages.dhall metadata version.
 const pursVersion = stackYamlContent.split("\n")
   .reduce((acc, nextLine) => {
     if (acc.found) return acc;
@@ -27,7 +30,9 @@ const pursVersion = stackYamlContent.split("\n")
       ? { found: true, value: matchResult[1] }
       : acc;
   }, { found: false })
-  .value;
+  .value
+  // Fallback: extract from staging/packages.dhall metadata version
+  ?? packagesContent.match(/metadata\.version\s*=\s*"v([^"]+)"/)?.[1];
 
 const packageSetVersion = packagesContent
   .match(/https:\/\/github.com\/purescript\/package-sets\/releases\/download\/psc-([^\/]+)\/packages.dhall/)[1];

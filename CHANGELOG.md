@@ -11,6 +11,14 @@ New features:
 Bugfixes:
 
 Other improvements:
+- Bump PureScript to `0.15.15` (v0.15.16-8 prerelease)
+- Update to latest package set (`psc-0.15.15-20260207`)
+- Upgrade to GHC 9.8.4 / Stackage LTS 23.18
+- Add idiomatic Nix flake with build support
+- Modernize trypurescript.cabal (cabal-version 2.4, proper version bounds)
+- Fix all GHC warnings in server code
+- Update CI to modern GitHub Actions versions
+- Update cabal.project with proper source-repository-packages and constraints
 
 ## [v2023-12-22.1](https://github.com/purescript/trypurescript/releases/tag/v2023-12-22.1)
 

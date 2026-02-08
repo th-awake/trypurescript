@@ -1,57 +1,50 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternGuards #-}
-
 module Main (main) where
 
-import           Control.Monad (unless, foldM)
-import           Control.Monad.Error.Class (throwError)
-import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.Logger (runLogger')
-import qualified Control.Monad.State as State
+import           Control.Monad (foldM)
+import           Control.Monad.Error.Class ()
+import           Control.Monad.IO.Class ()
+import           Control.Monad.Logger ()
+import           Control.Monad.State qualified as State
 import           Control.Monad.Trans (lift)
 import           Control.Monad.Trans.Except (ExceptT(..), runExceptT)
-import           Control.Monad.Trans.Reader (runReaderT)
+import           Control.Monad.Trans.Reader ()
 import           Control.Monad.Writer.Strict (runWriterT)
-import qualified Data.Aeson as A
+import           Data.Aeson qualified as A
 import           Data.Aeson ((.=))
-import           Data.Bifunctor (first, second, bimap)
-import qualified Data.ByteString.Lazy as BL
+import           Data.Bifunctor (second, bimap)
+import           Data.ByteString.Lazy qualified as BL
 import           Data.Default (def)
 import           Data.Function (on)
-import qualified Data.IORef as IORef
+import           Data.IORef qualified as IORef
 import           Data.List (nubBy)
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Map as M
-import           Data.Set (Set)
-import qualified Data.Set as Set
+import           Data.List.NonEmpty qualified as NE
+import           Data.Map qualified as M
+import           Data.Set qualified as Set
 import           Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
+import           Data.Text qualified as T
+import           Data.Text.Encoding qualified as T
 import           Data.Time.Clock (UTCTime)
 import           GHC.Generics (Generic)
-import qualified Language.PureScript as P
-import qualified Language.PureScript.CST as CST
-import qualified Language.PureScript.CST.Monad as CSTM
-import qualified Language.PureScript.CodeGen.JS as J
-import qualified Language.PureScript.CodeGen.JS.Printer as P
-import qualified Language.PureScript.CoreFn as CF
-import qualified Language.PureScript.Docs.Types as Docs
-import qualified Language.PureScript.Errors.JSON as P
-import qualified Language.PureScript.Interactive as I
-import qualified Language.PureScript.Make as Make
-import qualified Language.PureScript.Make.Cache as Cache
-import qualified Language.PureScript.Names as N
-import qualified Language.PureScript.TypeChecker.TypeSearch as TS
-import qualified Network.Wai.Handler.Warp as Warp
+import           Language.PureScript qualified as P
+import           Language.PureScript.CST qualified as CST
+import           Language.PureScript.CST.Monad qualified as CSTM
+import           Language.PureScript.CodeGen.JS qualified as J
+import           Language.PureScript.CodeGen.JS.Printer qualified as P
+import           Language.PureScript.CoreFn qualified as CF
+import           Language.PureScript.Docs.Types qualified as Docs
+import           Language.PureScript.Errors.JSON qualified as P
+import           Language.PureScript.Interactive qualified as I
+import           Language.PureScript.Make qualified as Make
+import           Language.PureScript.Make.Cache qualified as Cache
+import           Language.PureScript.Names qualified as N
+import           Language.PureScript.TypeChecker.TypeSearch qualified as TS
+import           Network.Wai.Handler.Warp qualified as Warp
 import           System.Environment (getArgs)
 import           System.Exit (exitFailure)
 import           System.FilePath.Glob (glob)
-import qualified System.IO as IO
+import           System.IO qualified as IO
 import           Web.Scotty
-import qualified Web.Scotty as Scotty
+import           Web.Scotty qualified as Scotty
 
 type JS = Text
 
@@ -171,7 +164,7 @@ server allModuleNames externs initNamesEnv initEnv port = do
           Scotty.json $ A.object [ "js" .= comp, "warnings" .= warnings ]
 
     get "/search" $ do
-      query <- param "q"
+      query <- queryParam "q"
       Scotty.setHeader "Access-Control-Allow-Origin" "*"
       Scotty.setHeader "Content-Type" "application/json"
       case tryParseType query of
@@ -204,9 +197,9 @@ lookupAllConstructors env = P.everywhereOnTypesM $ \case
     other -> pure other
   where
     lookupConstructor :: P.Environment -> P.ProperName 'P.TypeName -> [P.Qualified (P.ProperName 'P.TypeName)]
-    lookupConstructor env nm =
+    lookupConstructor env' nm =
       [ q
-      | (q@(P.Qualified (N.ByModuleName _) thisNm), _) <- M.toList (P.types env)
+      | (q@(P.Qualified (N.ByModuleName _) thisNm), _) <- M.toList (P.types env')
       , thisNm == nm
       ]
 
@@ -214,17 +207,17 @@ lookupAllConstructors env = P.everywhereOnTypesM $ \case
 --
 -- Also remove the @ParensInType@ Constructor (we need to deal with type operators later at some point).
 replaceTypeVariablesAndDesugar :: (Text -> Int -> P.SourceType) -> P.SourceType -> P.SourceType
-replaceTypeVariablesAndDesugar f ty = State.evalState (P.everywhereOnTypesM go ty) (0, M.empty) where
+replaceTypeVariablesAndDesugar f ty0 = State.evalState (P.everywhereOnTypesM go ty0) (0, M.empty) where
   go = \case
-    P.ParensInType _ ty -> pure ty
+    P.ParensInType _ inner -> pure inner
     P.TypeVar _ s -> do
-      (next, m) <- State.get
+      (n, m) <- State.get
       case M.lookup s m of
         Nothing -> do
-          let ty = f s next
-          State.put (next + 1, M.insert s ty m)
-          pure ty
-        Just ty -> pure ty
+          let ty' = f s n
+          State.put (n + 1, M.insert s ty' m)
+          pure ty'
+        Just ty' -> pure ty'
     other -> pure other
 
 tryParseType :: Text -> Maybe P.SourceType
